@@ -13,25 +13,29 @@ class FilmBuff
 
   # Create a new FilmBuff instance
   #
-  # @param [String] locale
+  # @param [Hash<Symbol>] options Options Hash
+  #   Changes the instance's default behaviours. Options are passed as
+  #   symbols in a hash.
+  #
+  # @option options [String] :locale
   #   The locale to search with. The FilmBuff instance will also return
   #   results in the language matching the given locale. Defaults to `en_US`
   #
-  # @param [Boolean] ssl
+  # @option options [Boolean] :ssl
   #   Whether or not to use SSL when searching by IMDb ID (IMDb does not
   #   currently support SSL when searching by title). Defaults to `true`
   #
-  # @param [Object, Hash, nil] cache
+  # @option options [Object, Hash, nil] :cache
   #   Whatever Faraday-http-cache should use for caching. Can be both an
   #    object such as `Rails.cache`, a hash like
   #   `:mem_cache_store, 'localhost:11211'`, or `nil`, meaning no caching.
   #   Defaults to `nil`
   #
-  # @param [Object] logger
+  # @option options [Object] :logger
   #   An instance of a logger object. Defaults to `nil` and no logging
   def initialize(options = {})
     @locale = options[:locale] || 'en_US'
-    @protocol = options[:ssl] == false ? 'http' : 'https'
+    @protocol = options[:ssl] ? 'https' : 'http'
     @cache = options[:cache]
     @logger = options[:logger]
   end
@@ -84,9 +88,11 @@ class FilmBuff
   #
   # @param [String] title The title to search for
   #
-  # @param [Integer] limit The maximum number of results to return
+  # @param [Hash<Symbol>] options Options Hash
   #
-  # @param [Array] types The types of matches to search for.
+  # @option options [Integer] :limit The maximum number of results to return
+  #
+  # @option options [Array] :types The types of matches to search for.
   #   These types will be searched in the provided order. Can be
   #   `title_popular`, `title_exact`, `title_approx`, and `title_substring`
   #
