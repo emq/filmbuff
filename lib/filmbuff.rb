@@ -28,10 +28,10 @@ class FilmBuff
   # @param [Object] logger
   #   An instance of a logger object. Defaults to `nil` and no logging
   def initialize(options = {})
-    @locale   = options[:locale] || 'en_US'
+    @locale = options[:locale] || 'en_US'
     @protocol = options[:ssl] == false ? 'http' : 'https'
-    @cache    = options[:cache]
-    @logger   = options[:logger]
+    @cache = options[:cache]
+    @logger = options[:logger]
   end
 
   private
@@ -90,11 +90,11 @@ class FilmBuff
   #   movie = imdb_instance.search_for_title('The Wizard of Oz')
   #
   # @example Return only 2 results
-  #   movie = imdb_instance.search_for_title('The Wizard of Oz', limit: 2)
+  #   movie = imdb_instance.search_for_title('The Wizard of Oz', :limit => 2)
   #
   # @example Only return results containing the exact title provided
   #   movie = imdb_instance.search_for_title('The Wizard of Oz',
-  #                                          types: %w(title_exact))
+  #                                          :types => %w(title_exact))
   def search_for_title(title, options = {})
     response = connection.get 'http://www.imdb.com/xml/find', {
       :q => title,
@@ -102,16 +102,15 @@ class FilmBuff
       :tt => 'on'
     }
 
-    limit = options[:limit]
-    types = options[:types] || %w(title_popular title_exact title_approx 
-      title_substring)
-
+    types = options[:types] || %w(title_popular title_exact title_approx
+                                  title_substring)
     output = []
+
     results = response.body.select { |key| types.include? key }
 
     results.each_key do |key|
       response.body[key].each do |row|
-        break unless output.size < limit if limit
+        break unless output.size < options[:limit] if options[:limit]
         next unless row['id'] && row['title'] && row['description']
 
         output << build_hash(key, row)

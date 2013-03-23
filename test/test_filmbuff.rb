@@ -122,7 +122,7 @@ describe FilmBuff do
     describe 'given a limit of 3' do
       before do
         VCR.use_cassette('The Wizard of Oz by title') do
-          @titles = @imdb.search_for_title('The Wizard of Oz', limit: 3)
+          @titles = @imdb.search_for_title('The Wizard of Oz', :limit => 3)
         end
       end
 
@@ -135,7 +135,7 @@ describe FilmBuff do
       before do
         VCR.use_cassette('The Wizard of Oz by title') do
           @title = @imdb.search_for_title('The Wizard of Oz',
-                                          types: %w(title_popular))
+                                          :types => %w(title_popular))
         end
       end
 
