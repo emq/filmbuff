@@ -10,7 +10,7 @@ Film Buff supports IMDb's different locales, so information can be retrieved in 
 
 ## Usage
 
-Film Buff 1.0.x provides two ways to return information on a movie or TV show. First, set up an IMDb instance:
+Film Buff 0.9.x provides two ways to return information on a movie or TV show. First, set up an IMDb instance:
 
     require 'filmbuff'
     imdb = FilmBuff.new
