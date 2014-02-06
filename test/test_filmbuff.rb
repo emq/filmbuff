@@ -2,7 +2,7 @@ require_relative 'test_helper'
 
 VCR.configure do |c|
   c.cassette_library_dir = 'fixtures/vcr_cassettes'
-  c.hook_into :faraday
+  c.hook_into :excon
 end
 
 describe FilmBuff do
@@ -30,20 +30,6 @@ describe FilmBuff do
     end
 
     describe 'given locale' do
-      describe 'de_DE' do
-        before do
-          @imdb.locale = 'de_DE'
-
-          VCR.use_cassette('The Wizard of Oz German') do
-            @title = @imdb.look_up_id('tt0032138')
-          end
-        end
-
-        it 'returns German information' do
-          assert_equal 'Das zauberhafte Land', @title.title
-        end
-      end
-
       describe 'en_US' do
         before do
           @imdb.locale = 'en_US'
@@ -129,11 +115,9 @@ describe FilmBuff do
       end
 
       describe 'given a non-existent title' do
-        it 'throws an exception' do
+        it 'returns empty results' do
           VCR.use_cassette('non-existent title') do
-            assert_raises(FilmBuff::NotFound) do
-              @title = @imdb.search_for_title('This title should not exist')
-            end
+            assert_equal([], @imdb.search_for_title('102947561910129457302809876'))
           end
         end
       end

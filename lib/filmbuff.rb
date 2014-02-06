@@ -1,12 +1,18 @@
 require 'filmbuff/title'
-
-require 'faraday'
-require 'faraday_middleware'
-require 'faraday-http-cache'
+require 'excon'
+require 'json'
 
 # Interacts with IMDb and is used to look up titles
 class FilmBuff
   class NotFound < StandardError; end
+
+  USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:25.0) Gecko/20100101 Firefox/25.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:25.0) Gecko/20100101 Firefox/25.0",
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0",
+    "Mozilla/5.0 (Windows NT 6.0; WOW64; rv:24.0) Gecko/20100101 Firefox/24.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Firefox/24.0"
+  ].freeze
 
   # @return [String] The locale currently used by the IMDb instance
   attr_accessor :locale
@@ -39,20 +45,20 @@ class FilmBuff
   private
 
   def connection
-    @connection ||= Faraday.new(:url => "#{@protocol}://app.imdb.com") do |c|
-      c.use :http_cache, @cache, :logger => @logger
-      c.response :json
-      c.adapter Faraday.default_adapter
-    end
+    @connection ||= Excon.new("#{@protocol}://app.imdb.com")
   end
 
   def build_hash(type, values)
     {
-      :type => type,
-      :imdb_id => values['id'],
-      :title => values['title'],
-      :release_year => values['description'][/\A\d{4}/]
+      type: type,
+      imdb_id: values['id'],
+      title: values['title'],
+      release_year: values['description'][/\A\d{4}/]
     }
+  end
+
+  def headers
+    @headers ||= { 'User-Agent' => USER_AGENTS.sample }
   end
 
   public
@@ -69,14 +75,14 @@ class FilmBuff
   # @example Basic usage
   #   movie = imdb_instance.look_up_id('tt0032138')
   def look_up_id(imdb_id)
-    response = connection.get '/title/maindetails', {
-      :tconst => imdb_id, :locale => @locale
-    }
+    response = connection.get(path: '/title/maindetails', query: {
+      tconst: imdb_id, locale: @locale
+    }, headers: headers)
 
     unless response.status == 200
       fail NotFound
     else
-      Title.new(response.body['data'])
+      Title.new(JSON.parse(response.body)['data'])
     end
   end
 
@@ -105,17 +111,18 @@ class FilmBuff
                                                  title_exact
                                                  title_approx
                                                  title_substring))
-    response = connection.get 'http://www.imdb.com/xml/find', {
-      :q => title,
-      :json => '1',
-      :tt => 'on'
-    }
+    response = Excon.get('http://www.imdb.com/xml/find', query: {
+      q: title,
+      json: '1',
+      tt: 'on'
+    }, headers: headers)
 
     output = []
-    results = response.body.select { |key| types.include? key }
+    body = JSON.parse(response.body)
+    results = body.select { |key| types.include? key }
 
     results.each_key do |key|
-      response.body[key].each do |row|
+      body[key].each do |row|
         break unless output.size < limit if limit
         next unless row['id'] && row['title'] && row['description']
 
